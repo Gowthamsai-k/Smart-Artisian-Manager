@@ -1,45 +1,84 @@
 import Homepage from './Components/Homepage'
 import Product from './Components/Artisian/Artisian_Products/Product'
+import Materials from './Components/Artisian/Artisian_Products/Materials'
 import Payments from './Components/Artisian/Artisian_payments/Payments'
 import Login from './Components/Auth/login'
 import Signup from './Components/Auth/signup'
+import Sales from './Components/Artisian/Sales'
 
 import Dashboard from './Components/Dashboard/Dashboard'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 
 import { MantineProvider } from '@mantine/core'
 import "@mantine/core/styles.css";
+import './Components/Dashboard/Dashboard.css';
 
 import ProtectedRoute from '../Protected'
+import GuestRoute from '../GuestRoute'
+import Sidebar from './Components/Sidebar/Sidebar'
+import Profile from './Components/Auth/Profile'
 
 function App() {
+  const location = useLocation();
+  const isAuthPage = ['/', '/login', '/signup'].includes(location.pathname);
 
   return (
 
     <MantineProvider>
+      <div style={{ display: 'flex' }}>
+        <Sidebar />
+        <div className={isAuthPage ? "" : "main-content"} style={{ flex: 1 }}>
+          <Routes>
 
-      <Routes>
+            <Route path="/" element={<Homepage />} />
 
-        <Route path="/" element={<Homepage />} />
+            <Route path="/dashboard" element={<ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>}
+            />
 
-        <Route path="/dashboard" element={<Dashboard />} />
+            <Route path='/Product' element={<ProtectedRoute>
+              <Product />
+            </ProtectedRoute>}
+            />
 
-        <Route path='/Product' element={<Product />} />
+            <Route path='/materials' element={<ProtectedRoute>
+              <Materials />
+            </ProtectedRoute>}
+            />
 
-        <Route path='/login' element={<Login />} />
+            <Route path='/sales' element={<ProtectedRoute>
+              <Sales />
+            </ProtectedRoute>}
+            />
 
-        <Route path='/signup' element={<Signup />} />
+            <Route path='/profile' element={<ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>}
+            />
 
-        <Route
-          path='/Payments'
-          element={
-            <ProtectedRoute>
-              <Payments />
-            </ProtectedRoute>
-          }
-        />
+            <Route path='/login' element={
+              <GuestRoute>
+                <Login />
+              </GuestRoute>
+            } />
 
-      </Routes>
+            <Route path='/signup' element={
+              <GuestRoute>
+                <Signup />
+              </GuestRoute>
+            } />
+
+            <Route path='/Payments' element={
+              <ProtectedRoute>
+                <Payments />
+              </ProtectedRoute>
+            }
+            />
+
+          </Routes>
+        </div>
+      </div>
 
     </MantineProvider>
   )
