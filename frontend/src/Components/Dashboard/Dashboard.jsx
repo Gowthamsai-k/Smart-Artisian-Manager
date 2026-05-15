@@ -16,7 +16,8 @@ import {
   ChevronRight,
   ShoppingCart,
   Box,
-  Truck
+  Truck,
+  Home
 } from 'lucide-react';
 import {
   BarChart,
@@ -31,7 +32,6 @@ import {
 } from 'recharts';
 import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import HeaderMenu from '../NavBar/HeaderMenu';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -88,8 +88,7 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <>
-      <HeaderMenu variant="dashboard" />
+    <div className="dashboard-wrapper">
 
       <div className="header-section">
         <div className="title-info">
@@ -108,7 +107,7 @@ const Dashboard = () => {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-header">
-            <div className="stat-icon-wrapper" style={{ background: '#eef2ff', color: '#4f46e5' }}>
+            <div className="stat-icon-wrapper" style={{ background: '#f0f4e8', color: '#556B2F' }}>
               <ShoppingCart size={20} />
             </div>
             <div className="trend-indicator trend-up">
@@ -152,7 +151,7 @@ const Dashboard = () => {
             </div>
             <div className="chart-legend">
               <div className="legend-item">
-                <div className="legend-dot" style={{ background: '#4f46e5' }}></div>
+                <div className="legend-dot" style={{ background: '#556B2F' }}></div>
                 <span>Quantity</span>
               </div>
             </div>
@@ -167,7 +166,7 @@ const Dashboard = () => {
                   cursor={{ fill: '#f8fafc' }}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
-                <Bar dataKey="amount" fill="#4f46e5" radius={[4, 4, 0, 0]} barSize={30} />
+                <Bar dataKey="amount" fill="#556B2F" radius={[4, 4, 0, 0]} barSize={30} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -185,8 +184,8 @@ const Dashboard = () => {
               <AreaChart data={salesProfit}>
                 <defs>
                   <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#556B2F" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#556B2F" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="name" hide />
@@ -195,7 +194,7 @@ const Dashboard = () => {
                 <Area
                   type="monotone"
                   dataKey="profit"
-                  stroke="#10b981"
+                  stroke="#556B2F"
                   strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#colorProfit)"
@@ -208,7 +207,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-    </>
+    </div>
   );
 };
 

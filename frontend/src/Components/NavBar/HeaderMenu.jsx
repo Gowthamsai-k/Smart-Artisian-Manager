@@ -9,7 +9,7 @@ import {
   Text,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconLogin } from '@tabler/icons-react';
+import { IconLogin, IconAnalyze } from '@tabler/icons-react';
 import { NavLink, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -30,6 +30,12 @@ export default function HeaderMenu() {
   const isLoggedIn = useSelector(getIsLoggedIn);
   const dispatch = useDispatch();
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    dispatch(removeUser());
+    closeDrawer();
+  };
+
   const navItems = navLinks.map((link) => (
     <NavLink
       key={link.to}
@@ -46,10 +52,13 @@ export default function HeaderMenu() {
   return (
     <Box pb={0}>
       <header className={classes.header}>
-        <Group justify="space-between" h="100%">
-          <Text component={Link} to="/" className={classes.logo}>
-            Being  <Text component="span">Zero</Text>
-          </Text>
+        <Group justify="space-between" h="100%" px="md">
+          <Group gap="xs" component={Link} to="/" style={{ textDecoration: 'none' }}>
+            <IconAnalyze color="#556B2F" size={28} stroke={2} />
+            <Text fw={900} size="xl" c="#556B2F" style={{ letterSpacing: '-1px' }}>
+              ArtisanFlow
+            </Text>
+          </Group>
 
           <Group h="100%" gap={0} visibleFrom="sm">
             {isLoggedIn && navItems}
@@ -57,15 +66,16 @@ export default function HeaderMenu() {
 
           <Group visibleFrom="sm">
             {isLoggedIn ? (
-              <Button variant="default" onClick={() => dispatch(removeUser())}>
+              <Button variant="default" onClick={handleLogout}>
                 Logout
               </Button>
             ) : (
               <Button
-                variant="default"
+                variant="filled"
+                color="#556B2F"
                 component={Link}
                 to="/login"
-                leftSection={<IconLogin />}
+                leftSection={<IconLogin size={18} />}
               >
                 Log in
               </Button>
@@ -88,18 +98,18 @@ export default function HeaderMenu() {
         <ScrollArea h="calc(100vh - 80px)" mx="-md">
           <Divider my="sm" />
           {isLoggedIn && (
-            <Box className={classes.drawerLinks}>
+            <Box className={classes.drawerLinks} px="md">
               {navItems}
             </Box>
           )}
           <Divider my="sm" />
           <Group justify="center" grow pb="xl" px="md">
             {isLoggedIn ? (
-              <Button fullWidth onClick={() => { dispatch(removeUser()); closeDrawer(); }}>
+              <Button fullWidth onClick={handleLogout}>
                 Logout
               </Button>
             ) : (
-              <Button component={Link} to="/login" fullWidth onClick={closeDrawer}>
+              <Button component={Link} to="/login" fullWidth onClick={closeDrawer} color="#556B2F">
                 Login
               </Button>
             )}

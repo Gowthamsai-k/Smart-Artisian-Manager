@@ -1,14 +1,14 @@
 :root {
   --sidebar-width: 260px;
-  --bg-color: #f8faff;
+  --bg-color: #f9fafb;
   --card-bg: #ffffff;
-  --primary-color: #4f46e5;
-  --text-main: #1e293b;
+  --primary-color: #556B2F;
+  --text-main: #1a1b1e;
   --text-muted: #64748b;
   --border-color: #e2e8f0;
-  --accent-purple: #8b5cf6;
-  --accent-blue: #3b82f6;
-  --accent-green: #10b981;
+  --accent-purple: #6b8e23; /* OliveDrab */
+  --accent-blue: #556B2F;
+  --accent-green: #556B2F;
   --accent-red: #ef4444;
 }
 
@@ -139,6 +139,7 @@
     transform: scale(1);
     opacity: 0.8;
   }
+
   100% {
     transform: scale(2.5);
     opacity: 0;
@@ -293,9 +294,17 @@
   gap: 0.25rem;
 }
 
-.trend-up { color: var(--accent-green); }
-.trend-down { color: var(--accent-red); }
-.trend-stable { color: var(--text-muted); }
+.trend-up {
+  color: var(--accent-green);
+}
+
+.trend-down {
+  color: var(--accent-red);
+}
+
+.trend-stable {
+  color: var(--text-muted);
+}
 
 .stat-label {
   font-size: 0.75rem;
@@ -489,4 +498,159 @@ td {
   font-weight: 700;
   color: var(--primary-color);
   margin-top: 0.25rem;
+}
+
+/* Horizontal Navbar Styles */
+.top-navbar {
+  width: 100%;
+  height: 70px;
+  background: white;
+  border-bottom: 1px solid var(--border-color);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-container {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+}
+
+.logo-section-horizontal h1 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.nav-links-horizontal {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-item-horizontal {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.nav-item-horizontal:hover {
+  background: #f1f5f9;
+  color: var(--text-main);
+}
+
+.nav-item-horizontal.active {
+  background: #f0f4e8;
+  color: var(--primary-color);
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.add-btn-horizontal {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.add-btn-horizontal:hover {
+  background: #3d4d22;
+}
+
+.logout-btn-horizontal {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s;
+}
+
+.logout-btn-horizontal:hover {
+  background: #fef2f2;
+}
+
+.login-link-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-main);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s;
+}
+
+.login-link-nav:hover {
+  background: #f1f5f9;
+}
+
+.signup-btn-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.5rem 1.2rem;
+  border-radius: 0.5rem;
+  transition: opacity 0.2s;
+}
+
+.signup-btn-nav:hover {
+  opacity: 0.9;
+}
+
+/* Override main-content for top navbar */
+.main-content-top {
+  margin-left: 0 !important;
+  padding-top: 100px !important;
+  /* Added more space below navbar */
+  padding-bottom: 4rem;
+  width: 100% !important;
+  display: flex;
+  justify-content: center;
+}
+
+.dashboard-wrapper {
+  max-width: 1400px;
+  width: 100%;
+  padding: 0 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  /* Consistent vertical spacing between sections */
 }

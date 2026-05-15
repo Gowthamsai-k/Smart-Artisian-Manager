@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
     Container, 
@@ -43,7 +43,7 @@ const Materials = () => {
         };
 
         // Update local state
-        setMaterialList([...materialList, newMat]);
+        setMaterialList([newMat, ...materialList]);
 
         try {
             // Correct axios post call with headers for authorization
@@ -72,7 +72,7 @@ const Materials = () => {
             <Paper shadow="xl" radius="md" p="xl" withBorder>
                 <Stack gap="md">
                     <Group justify="center">
-                        <IconPackage size={32} color="var(--mantine-color-blue-filled)" />
+                        <IconPackage size={32} color="#556B2F" />
                         <Title order={1} style={{ letterSpacing: '-1px' }}>Materials Inventory</Title>
                     </Group>
                     
@@ -129,8 +129,9 @@ const Materials = () => {
                                 fullWidth 
                                 size="md" 
                                 radius="md"
+                                mt="md"
                                 leftSection={<IconPlus size={18} />}
-                                color="blue"
+                                color="olive"
                             >
                                 Add Material
                             </Button>

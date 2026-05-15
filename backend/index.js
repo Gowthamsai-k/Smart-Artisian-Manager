@@ -7,6 +7,7 @@ import connectDB from './src/db/db.js'
 import materialRouter from './src/Routers/materialRouters.js'
 import productRoutes from './src/Routers/productRouters.js'
 import salesRouter from './src/Routers/salesRouters.js'
+import aiRouter from './src/Routers/aiRouters.js'
 
 dotenv.config()
 connectDB()

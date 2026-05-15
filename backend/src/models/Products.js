@@ -7,6 +7,11 @@ const ProductSchema = new mongoose.Schema({
     price: { type: Number, required: true },
     quantity: { type: Number, required: true },
     category: { type: String, required: true },
+    materialsUsed: [{
+        materialId: { type: mongoose.Schema.Types.ObjectId, ref: 'Material' },
+        name: String,
+        quantity: Number
+    }]
 
 }, { timestamps: true })
 

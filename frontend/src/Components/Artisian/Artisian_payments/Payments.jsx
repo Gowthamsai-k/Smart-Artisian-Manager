@@ -41,7 +41,7 @@ const Payments = () => {
                 <Text size="xs" color="dimmed">{sale.productId}</Text>
             </Table.Td>
             <Table.Td>
-                <Badge variant="light" color="blue" radius="sm">
+                <Badge variant="light" color="olive" radius="sm">
                     {sale.category}
                 </Badge>
             </Table.Td>

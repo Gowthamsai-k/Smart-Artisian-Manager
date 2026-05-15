@@ -1,9 +1,41 @@
 import Products from "../../models/Products.js";
+import Material from "../../models/Materials.js";
 
 export const AddProduct = async (req, res) => {
     try {
+        const { name, description, price, quantity, category, materialsUsed } = req.body;
 
-        const product = new Products(req.body);
+        // 1. Validate and reduce materials
+        if (materialsUsed && materialsUsed.length > 0) {
+            for (const item of materialsUsed) {
+                const material = await Material.findById(item.materialId);
+                if (!material) {
+                    return res.status(404).json({ success: false, message: `Material ${item.name} not found` });
+                }
+                
+                // Total quantity needed = quantity per unit * number of products being made
+                const totalNeeded = item.quantity * quantity;
+                
+                if (material.quantity < totalNeeded) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: `Insufficient quantity for ${material.name}. Available: ${material.quantity}, Needed: ${totalNeeded}` 
+                    });
+                }
+                
+                material.quantity -= totalNeeded;
+                await material.save();
+            }
+        }
+
+        const product = new Products({
+            name,
+            description,
+            price,
+            quantity,
+            category,
+            materialsUsed
+        });
 
         await product.save();
 
@@ -13,14 +45,13 @@ export const AddProduct = async (req, res) => {
         });
 
     } catch (error) {
-
         res.status(500).json({
             success: false,
             message: error.message
         });
-
     }
 }
+
 export const GetProducts = async (req, res) => {
     try {
         const products = await Products.find();

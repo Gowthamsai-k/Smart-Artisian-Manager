@@ -54,12 +54,12 @@ const Profile = () => {
                 <Stack gap="xl">
                     <Group justify="space-between">
                         <Group>
-                            <Avatar size={80} radius={80} color="blue">
+                            <Avatar size={80} radius={80} color="olive">
                                 {user.name?.charAt(0).toUpperCase()}
                             </Avatar>
                             <Box>
                                 <Title order={2}>{user.name}</Title>
-                                <Badge color="blue" variant="light">Professional Artisan</Badge>
+                                <Badge color="olive" variant="light">Professional Artisan</Badge>
                             </Box>
                         </Group>
                         <Button variant="light" color="red" leftSection={<IconLogout size={16} />} onClick={handleLogout}>
