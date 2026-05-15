@@ -1,34 +1,39 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import dotenv from 'dotenv';
-dotenv.config();
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "YOUR_GEMINI_API_KEY");
 
 export const ChatWithAI = async (req, res) => {
     try {
         const { message, context } = req.body;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        if (!process.env.GEMINI_API_KEY) {
+            console.error("AI Error: Missing API Key");
+            return res.status(500).json({ success: false, message: "Server configuration error: Missing AI Key" });
+        }
+
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const prompt = `
         You are an expert Artisan Business Consultant for "ArtisanFlow". 
         Your goal is to help artisans improve their product quality, pricing strategies, and market research.
 
-        Context: ${JSON.stringify(context || {})}
+        Available Data:
+        - Current Inventory: ${JSON.stringify(context?.inventory || [])}
+        - Product Catalog: ${JSON.stringify(context?.products || [])}
+        - Current App Location: ${context?.currentPath}
         
         User Message: ${message}
 
         Rules:
         1. Be encouraging, professional, and sophisticated.
-        2. If the user asks about pricing, consider the "materialsUsed" in the context if provided.
-        3. If the user asks about quality, give specific artisan-focused advice (e.g., finishing, durability, storytelling).
-        4. Keep responses concise and formatted with markdown.
-        5. If the user asks for market research, simulate a brief analysis based on current trends in their category.
+        2. Keep responses VERY SHORT and CONCISE (maximum 60 words).
+        3. ALWAYS use the "Available Data" to give specific answers. E.g., if asked about price, look at the material costs/names in the inventory.
+        4. If asked about quality, give specific advice related to their catalog items.
+        5. Use markdown for brief formatting.
+        6. Always focus on practical, actionable steps.
         `;
 
         const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || result.response.text() || "I couldn't generate a response.";
 
         res.status(200).json({
             success: true,
@@ -36,11 +41,10 @@ export const ChatWithAI = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("AI Error:", error);
+        console.error("AI Backend Error:", error);
         res.status(500).json({
             success: false,
-            message: "I'm having trouble thinking right now. Please try again later.",
-            error: error.message
+            message: "AI Error: " + error.message
         });
     }
 };

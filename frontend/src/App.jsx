@@ -87,6 +87,7 @@ function App() {
             } />
           </Routes>
         </div>
+        <Chatbot />
       </div>
     </MantineProvider>
   )

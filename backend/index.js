@@ -1,7 +1,8 @@
 import express from 'express'
+import dotenv from 'dotenv'
+dotenv.config()
 
 import cors from 'cors'
-import dotenv from 'dotenv'
 import authRoutes from './src/Routers/authRouters.js'
 import connectDB from './src/db/db.js'
 import materialRouter from './src/Routers/materialRouters.js'
@@ -29,6 +30,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/material', materialRouter)
 app.use('/api/products', productRoutes)
 app.use('/api/sales', salesRouter)
+app.use('/api/ai', aiRouter)
 
 app.listen(3000, () => {
     console.log("server is running on port 3000")

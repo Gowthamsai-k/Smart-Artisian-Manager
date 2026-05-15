@@ -15,6 +15,7 @@ import {
 } from '@mantine/core';
 import { IconMessageChatbot, IconX, IconSend, IconSparkles, IconTrendingUp, IconCash } from '@tabler/icons-react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
 
 const Chatbot = () => {
     const [opened, setOpened] = useState(false);
@@ -43,11 +44,18 @@ const Chatbot = () => {
         setLoading(true);
 
         try {
+            // Fetch latest context data
+            const [prodRes, matRes] = await Promise.all([
+                axios.get('http://localhost:3000/api/sales/products'),
+                axios.get('http://localhost:3000/api/material/all')
+            ]);
+
             const response = await axios.post('http://localhost:3000/api/ai/chat', {
                 message: messageText,
                 context: {
                     currentPath: window.location.pathname,
-                    // Additional context can be added here (e.g., current product data)
+                    products: prodRes.data.products || [],
+                    inventory: matRes.data.materials || []
                 }
             });
 
@@ -118,13 +126,25 @@ const Chatbot = () => {
                                             style={{ 
                                                 maxWidth: '80%', 
                                                 backgroundColor: msg.role === 'user' ? '#f0f4e8' : '#f8f9fa',
-                                                padding: '8px 12px',
+                                                padding: '4px 12px',
                                                 borderRadius: '12px',
                                                 borderTopRightRadius: msg.role === 'user' ? 2 : 12,
-                                                borderTopLeftRadius: msg.role === 'assistant' ? 2 : 12
+                                                borderTopLeftRadius: msg.role === 'assistant' ? 2 : 12,
+                                                fontSize: '14px',
+                                                lineHeight: '1.4'
                                             }}
                                         >
-                                            <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</Text>
+                                            <ReactMarkdown 
+                                                components={{
+                                                    p: ({node, ...props}) => <Text size="sm" style={{ margin: '4px 0' }} {...props} />,
+                                                    ul: ({node, ...props}) => <ul style={{ paddingLeft: 16, margin: '4px 0' }} {...props} />,
+                                                    li: ({node, ...props}) => <li style={{ marginBottom: 2 }} {...props} />,
+                                                    h1: ({node, ...props}) => <Text fw={700} size="md" mt="xs" {...props} />,
+                                                    h2: ({node, ...props}) => <Text fw={700} size="sm" mt="xs" {...props} />,
+                                                }}
+                                            >
+                                                {msg.text}
+                                            </ReactMarkdown>
                                         </Box>
                                     </Group>
                                 ))}
