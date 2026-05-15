@@ -1,10 +1,10 @@
 import Homepage from './Components/Homepage'
 import Product from './Components/Artisian/Artisian_Products/Product'
 import Payments from './Components/Artisian/Artisian_payments/Payments'
-import LandingPage from './Components/LandingPage'
 import Login from './Components/Auth/login'
 import Signup from './Components/Auth/signup'
 
+import Dashboard from './Components/Dashboard/Dashboard'
 import { Routes, Route } from 'react-router-dom'
 
 import { MantineProvider } from '@mantine/core'
@@ -20,9 +20,9 @@ function App() {
 
       <Routes>
 
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<Homepage />} />
 
-        <Route path="/Home" element={<Homepage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
 
         <Route path='/Product' element={<Product />} />
 
