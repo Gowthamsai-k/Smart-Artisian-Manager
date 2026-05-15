@@ -87,6 +87,24 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+  const handleExport = async (period) => {
+    try {
+      const response = await axios.get(`http://localhost:3000/api/sales/export?period=${period}`, {
+        responseType: 'blob',
+        withCredentials: true
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `analysis_${period}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
+  };
+
   return (
     <div className="dashboard-wrapper">
 
@@ -95,10 +113,15 @@ const Dashboard = () => {
           <h2>Artisan Dashboard</h2>
           <p>Monitor your production, inventory, and sales performance</p>
         </div>
-        <div className="header-btns">
+        <div className="header-btns" style={{ display: 'flex', gap: '10px' }}>
+          <div className="export-group" style={{ display: 'flex', background: '#f8fafc', padding: '4px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <button className="export-btn" onClick={() => handleExport('monthly')} title="Monthly Report">Month</button>
+            <button className="export-btn" onClick={() => handleExport('quarterly')} title="Quarterly Report">Quarter</button>
+            <button className="export-btn" onClick={() => handleExport('yearly')} title="Yearly Report">Year</button>
+          </div>
           <button className="btn-primary" onClick={() => window.print()}>
             <Download size={18} />
-            <span>Download PDF</span>
+            <span>Print Dashboard</span>
           </button>
         </div>
       </div>

@@ -60,3 +60,25 @@ export const GetMaterialStats = async (req, res) => {
         });
     }
 };
+
+export const UpdateMaterial = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const mat = await Material.findByIdAndUpdate(id, req.body, { new: true });
+        if (!mat) return res.status(404).json({ success: false, message: "Material not found" });
+        res.status(200).json({ success: true, mat });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const DeleteMaterial = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const mat = await Material.findByIdAndDelete(id);
+        if (!mat) return res.status(404).json({ success: false, message: "Material not found" });
+        res.status(200).json({ success: true, message: "Material deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}

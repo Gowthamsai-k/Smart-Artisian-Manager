@@ -654,3 +654,24 @@ td {
   gap: 2rem;
   /* Consistent vertical spacing between sections */
 }
+
+.export-btn {
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.export-btn:hover {
+  background: #f1f5f9;
+  color: var(--primary-color);
+}
+
+.export-btn:active {
+  background: #e2e8f0;
+}

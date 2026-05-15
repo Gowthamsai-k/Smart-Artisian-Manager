@@ -31,6 +31,7 @@ import {
 const Product = () => {
     const [productList, setProductList] = useState([]);
     const [materials, setMaterials] = useState([]);
+    const [editingId, setEditingId] = useState(null);
 
     const initialFormState = {
         name: "",
@@ -42,6 +43,19 @@ const Product = () => {
     };
 
     const [formData, setFormData] = useState(initialFormState);
+
+    const fetchProducts = async () => {
+        try {
+            const res = await axios.get('http://localhost:3000/api/products/all', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.data.success) {
+                setProductList(res.data.products);
+            }
+        } catch (error) {
+            console.error('Error fetching products:', error);
+        }
+    };
 
     useEffect(() => {
         const fetchMaterials = async () => {
@@ -57,6 +71,7 @@ const Product = () => {
             }
         };
         fetchMaterials();
+        fetchProducts();
     }, []);
 
     const addMaterialRow = () => {
@@ -97,46 +112,70 @@ const Product = () => {
         });
     };
 
+    const handleEdit = (product) => {
+        setEditingId(product._id);
+        setFormData({
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            category: product.category,
+            quantity: product.quantity,
+            materialsUsed: product.materialsUsed || []
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this product?")) return;
+        try {
+            await axios.delete(`http://localhost:3000/api/products/${id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setProductList(productList.filter(p => p._id !== id));
+        } catch (error) {
+            console.error('Error deleting product:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const newProduct = {
-            id: Date.now(),
-            ...formData,
-        };
-
-        setProductList([...productList, newProduct]);
-
         try {
-            const response = await axios.post(
-                'http://localhost:3000/api/products/addproduct',
-                formData,
-                {
-                    withCredentials: true,
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`
-                    }
-                }
-            );
+            if (editingId) {
+                await axios.put(
+                    `http://localhost:3000/api/products/${editingId}`,
+                    formData,
+                    { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+                );
+                setEditingId(null);
+            } else {
+                await axios.post(
+                    'http://localhost:3000/api/products/addproduct',
+                    formData,
+                    { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+                );
+            }
 
-            console.log('Product added successfully:', response.data);
             setFormData(initialFormState);
+            fetchProducts();
         } catch (error) {
-            console.error('Error adding product:', error);
+            console.error('Error saving product:', error);
         }
     };
 
     return (
-        <Container size="sm" py="xl">
+        <Container size="md" py="xl">
             <Paper shadow="xl" radius="lg" p="xl" withBorder>
                 <Stack gap="lg">
                     <Group justify="center" gap="sm">
                         <IconPalette size={40} color="#556B2F" />
-                        <Title order={1} style={{ letterSpacing: '-1.5px', fontWeight: 900 }}>Add New Product</Title>
+                        <Title order={1} style={{ letterSpacing: '-1.5px', fontWeight: 900 }}>
+                            {editingId ? "Edit Product" : "Add New Product"}
+                        </Title>
                     </Group>
 
                     <Text color="dimmed" ta="center" size="md">
-                        List your artisan products in the marketplace.
+                        {editingId ? "Modify your existing artisan product details." : "List your artisan products in the marketplace."}
                     </Text>
 
                     <Divider label="Product Details" labelPosition="center" />
@@ -166,7 +205,7 @@ const Product = () => {
                                 leftSection={<IconFileDescription size={18} />}
                             />
 
-                            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
                                 <NumberInput
                                     label="Price"
                                     placeholder="Amount in ₹"
@@ -187,14 +226,14 @@ const Product = () => {
                                     size="md"
                                     leftSection={<IconTag size={18} />}
                                 />
-                                <Select
-                                    label="Quantity"
-                                    data={['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20']}
+                                <NumberInput
+                                    label="Stock Quantity"
                                     value={formData.quantity}
                                     onChange={(val) => setFormData({ ...formData, quantity: val })}
                                     required
+                                    min={1}
                                     size="md"
-                                    leftSection={<IconTag size={18} />}
+                                    leftSection={<IconInfoCircle size={18} />}
                                 />
                             </SimpleGrid>
 
@@ -238,64 +277,80 @@ const Product = () => {
                                 onClick={addMaterialRow}
                                 fullWidth
                                 mt="xs"
+                                color="olive"
                             >
                                 Add Raw Material
                             </Button>
 
-                            <Button
-                                type="submit"
-                                fullWidth
-                                size="lg"
-                                radius="md"
-                                mt="xl"
-                                leftSection={<IconPlus size={20} />}
-                                color="olive"
-                                variant="filled"
-                                style={{ boxShadow: '0 4px 15px rgba(34, 139, 230, 0.3)' }}
-                            >
-                                Publish Product
-                            </Button>
+                            <Group grow mt="xl">
+                                {editingId && (
+                                    <Button variant="light" color="gray" onClick={() => { setEditingId(null); setFormData(initialFormState); }}>
+                                        Cancel
+                                    </Button>
+                                )}
+                                <Button
+                                    type="submit"
+                                    size="lg"
+                                    radius="md"
+                                    leftSection={editingId ? <IconFileDescription size={20} /> : <IconPlus size={20} />}
+                                    color="olive"
+                                    variant="filled"
+                                    style={{ boxShadow: '0 4px 15px rgba(85, 107, 47, 0.3)' }}
+                                >
+                                    {editingId ? "Update Product" : "Publish Product"}
+                                </Button>
+                            </Group>
                         </Stack>
                     </form>
                 </Stack>
             </Paper>
 
-            {productList.length > 0 && (
-                <Paper shadow="md" radius="lg" p="xl" mt="2rem" withBorder bg="var(--mantine-color-gray-0)">
-                    <Group mb="lg">
-                        <IconInfoCircle size={24} color="gray" />
-                        <Title order={2} size="h3">Recently Published</Title>
-                    </Group>
-                    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
-                        {productList.map((product) => (
-                            <Paper key={product.id} p="md" radius="md" withBorder shadow="sm" bg="white">
-                                <Stack gap="xs">
+            <Divider my="3rem" label="Product Catalog" labelPosition="center" />
+
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+                {productList.map((product) => (
+                    <Paper key={product._id} p="md" radius="md" withBorder shadow="sm" bg="white">
+                        <Stack gap="xs">
+                            <Group justify="space-between" align="flex-start">
+                                <Box>
                                     <Title order={4} color="olive">{product.name}</Title>
-                                    <Text size="sm" lineClamp={2} color="dimmed">{product.description}</Text>
-                                    <Group justify="space-between" mt="sm">
-                                        <Text fw={700} color="green">₹{product.price}</Text>
-                                        <Text size="xs" color="olive" bg="olive.0" px="xs" py={2} style={{ borderRadius: '4px' }}>
-                                            {product.category}
-                                        </Text>
+                                    <Text size="xs" color="dimmed">{product.category}</Text>
+                                </Box>
+                                <Group gap={4}>
+                                    <ActionIcon variant="light" color="blue" onClick={() => handleEdit(product)}>
+                                        <IconFileDescription size={16} />
+                                    </ActionIcon>
+                                    <ActionIcon variant="light" color="red" onClick={() => handleDelete(product._id)}>
+                                        <IconTrash size={16} />
+                                    </ActionIcon>
+                                </Group>
+                            </Group>
+                            
+                            <Text size="sm" lineClamp={2} color="dimmed" style={{ minHeight: '40px' }}>{product.description}</Text>
+                            
+                            <Group justify="space-between" mt="sm">
+                                <Text fw={700} color="#556B2F" size="lg">₹{product.price}</Text>
+                                <Text size="xs" fw={700} bg="gray.0" px="xs" py={2} style={{ borderRadius: '4px' }}>
+                                    Stock: {product.quantity}
+                                </Text>
+                            </Group>
+
+                            {product.materialsUsed && product.materialsUsed.length > 0 && (
+                                <Box mt="xs">
+                                    <Group gap={4}>
+                                        {product.materialsUsed.slice(0, 3).map((m, i) => (
+                                            <Text key={i} size="xs" bg="olive.0" color="olive" px={6} py={2} style={{ borderRadius: '4px' }}>
+                                                {m.name}
+                                            </Text>
+                                        ))}
+                                        {product.materialsUsed.length > 3 && <Text size="xs" color="dimmed">+{product.materialsUsed.length - 3} more</Text>}
                                     </Group>
-                                    {product.materialsUsed && product.materialsUsed.length > 0 && (
-                                        <Box mt="xs">
-                                            <Text size="xs" fw={700} color="dimmed" mb={4}>Materials:</Text>
-                                            <Group gap={4}>
-                                                {product.materialsUsed.map((m, i) => (
-                                                    <Text key={i} size="xs" bg="gray.1" px={6} py={2} style={{ borderRadius: '4px' }}>
-                                                        {m.name} x{m.quantity}
-                                                    </Text>
-                                                ))}
-                                            </Group>
-                                        </Box>
-                                    )}
-                                </Stack>
-                            </Paper>
-                        ))}
-                    </SimpleGrid>
-                </Paper>
-            )}
+                                </Box>
+                            )}
+                        </Stack>
+                    </Paper>
+                ))}
+            </SimpleGrid>
         </Container>
     );
 };

@@ -10,13 +10,16 @@ import {
     Stack, 
     Group, 
     Text, 
-    Divider 
+    Divider,
+    ActionIcon, 
+    SimpleGrid, 
+    Box
 } from '@mantine/core';
-import { IconPackage, IconScale, IconCash, IconPlus } from '@tabler/icons-react';
+import { IconPackage, IconScale, IconCash, IconPlus, IconTrash, IconPencil } from '@tabler/icons-react';
 
 const Materials = () => {
-    // materialList will store the array of materials added
     const [materialList, setMaterialList] = useState([]);
+    const [editingId, setEditingId] = useState(null);
 
     const initialFormState = {
         name: "",
@@ -27,6 +30,23 @@ const Materials = () => {
 
     const [formData, setFormData] = useState(initialFormState);
 
+    const fetchMaterials = async () => {
+        try {
+            const response = await axios.get('http://localhost:3000/api/material/all', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (response.data.success) {
+                setMaterialList(response.data.materials);
+            }
+        } catch (error) {
+            console.error('Error fetching materials:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchMaterials();
+    }, []);
+
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -34,50 +54,68 @@ const Materials = () => {
         });
     };
 
+    const handleEdit = (mat) => {
+        setEditingId(mat._id);
+        setFormData({
+            name: mat.name,
+            quantity: mat.quantity,
+            cost: mat.cost,
+            unit: mat.unit
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Delete this material?")) return;
+        try {
+            await axios.delete(`http://localhost:3000/api/material/${id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setMaterialList(materialList.filter(m => m._id !== id));
+        } catch (error) {
+            console.error('Error deleting material:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        const newMat = {
-            id: Date.now(),
-            ...formData,
-        };
-
-        // Update local state
-        setMaterialList([newMat, ...materialList]);
-
         try {
-            // Correct axios post call with headers for authorization
-            const response = await axios.post(
-                'http://localhost:3000/api/material', 
-                formData, 
-                { 
-                    withCredentials: true,
-                    headers: { 
-                        Authorization: `Bearer ${localStorage.getItem('token')}` 
-                    } 
-                }
-            );
+            if (editingId) {
+                await axios.put(
+                    `http://localhost:3000/api/material/${editingId}`, 
+                    formData, 
+                    { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+                );
+                setEditingId(null);
+            } else {
+                await axios.post(
+                    'http://localhost:3000/api/material', 
+                    formData, 
+                    { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+                );
+            }
             
-            console.log('Material added successfully:', response.data);
-
-            // Reset form
             setFormData(initialFormState);
+            fetchMaterials();
         } catch (error) {
-            console.error('Error adding material:', error);
+            console.error('Error saving material:', error);
         }
     };
 
     return (
-        <Container size="sm" py="xl">
-            <Paper shadow="xl" radius="md" p="xl" withBorder>
+        <Container size="md" py="xl">
+            <Paper shadow="xl" radius="lg" p="xl" withBorder>
                 <Stack gap="md">
                     <Group justify="center">
-                        <IconPackage size={32} color="#556B2F" />
-                        <Title order={1} style={{ letterSpacing: '-1px' }}>Materials Inventory</Title>
+                        <IconPackage size={40} color="#556B2F" />
+                        <Title order={1} style={{ letterSpacing: '-1.5px', fontWeight: 900 }}>
+                            {editingId ? "Edit Material" : "Inventory Management"}
+                        </Title>
                     </Group>
                     
-                    <Text color="dimmed" ta="center" size="sm">
-                        Add new materials to your artisan supplies list.
+                    <Text color="dimmed" ta="center" size="md">
+                        {editingId ? "Update your supply details." : "Add new materials to your artisan supplies list."}
                     </Text>
 
                     <Divider my="sm" />
@@ -91,7 +129,8 @@ const Materials = () => {
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
-                                leftSection={<IconPackage size={16} />}
+                                size="md"
+                                leftSection={<IconPackage size={18} />}
                             />
 
                             <Group grow>
@@ -102,7 +141,8 @@ const Materials = () => {
                                     onChange={(val) => setFormData({ ...formData, quantity: val })}
                                     required
                                     min={0}
-                                    leftSection={<IconScale size={16} />}
+                                    size="md"
+                                    leftSection={<IconScale size={18} />}
                                 />
                                 <TextInput
                                     label="Unit"
@@ -111,49 +151,76 @@ const Materials = () => {
                                     value={formData.unit}
                                     onChange={handleChange}
                                     required
+                                    size="md"
                                 />
                             </Group>
 
                             <NumberInput
-                                label="Cost"
+                                label="Total Cost"
                                 placeholder="Total Cost (₹)"
                                 value={formData.cost}
                                 onChange={(val) => setFormData({ ...formData, cost: val })}
                                 required
                                 min={0}
-                                leftSection={<IconCash size={16} />}
+                                size="md"
+                                leftSection={<IconCash size={18} />}
                             />
 
-                            <Button 
-                                type="submit" 
-                                fullWidth 
-                                size="md" 
-                                radius="md"
-                                mt="md"
-                                leftSection={<IconPlus size={18} />}
-                                color="olive"
-                            >
-                                Add Material
-                            </Button>
+                            <Group grow mt="md">
+                                {editingId && (
+                                    <Button variant="light" color="gray" onClick={() => { setEditingId(null); setFormData(initialFormState); }}>
+                                        Cancel
+                                    </Button>
+                                )}
+                                <Button 
+                                    type="submit" 
+                                    size="lg" 
+                                    radius="md"
+                                    leftSection={editingId ? <IconPencil size={20} /> : <IconPlus size={20} />}
+                                    color="olive"
+                                    variant="filled"
+                                    style={{ boxShadow: '0 4px 15px rgba(85, 107, 47, 0.3)' }}
+                                >
+                                    {editingId ? "Update Stock" : "Add to Inventory"}
+                                </Button>
+                            </Group>
                         </Stack>
                     </form>
                 </Stack>
             </Paper>
 
-            {/* Optional: Display added materials below the form */}
-            {materialList.length > 0 && (
-                <Paper shadow="xs" radius="md" p="md" mt="xl" withBorder>
-                    <Title order={3} mb="md">Recently Added</Title>
-                    <Stack gap="xs">
-                        {materialList.map((item) => (
-                            <Group key={item.id} justify="space-between" p="xs" style={{ borderBottom: '1px solid #eee' }}>
-                                <Text fw={500}>{item.name}</Text>
-                                <Text size="sm">{item.quantity} {item.unit} - ₹{item.cost}</Text>
+            <Divider my="3rem" label="Supplies & Inventory" labelPosition="center" />
+
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+                {materialList.map((item) => (
+                    <Paper key={item._id} p="md" radius="md" withBorder shadow="sm" bg="white">
+                        <Stack gap="xs">
+                            <Group justify="space-between">
+                                <Title order={4} color="olive">{item.name}</Title>
+                                <Group gap={4}>
+                                    <ActionIcon variant="light" color="blue" onClick={() => handleEdit(item)}>
+                                        <IconPencil size={14} />
+                                    </ActionIcon>
+                                    <ActionIcon variant="light" color="red" onClick={() => handleDelete(item._id)}>
+                                        <IconTrash size={14} />
+                                    </ActionIcon>
+                                </Group>
                             </Group>
-                        ))}
-                    </Stack>
-                </Paper>
-            )}
+                            
+                            <Group justify="space-between" mt="xs">
+                                <Box>
+                                    <Text size="xs" color="dimmed">Stock Level</Text>
+                                    <Text fw={700}>{item.quantity} {item.unit}</Text>
+                                </Box>
+                                <Box style={{ textAlign: 'right' }}>
+                                    <Text size="xs" color="dimmed">Value</Text>
+                                    <Text fw={700} color="green">₹{item.cost}</Text>
+                                </Box>
+                            </Group>
+                        </Stack>
+                    </Paper>
+                ))}
+            </SimpleGrid>
         </Container>
     );
 };

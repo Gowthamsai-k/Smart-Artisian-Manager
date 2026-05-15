@@ -94,3 +94,34 @@ export const GetSalesStats = async (req, res) => {
         });
     }
 };
+export const ExportSales = async (req, res) => {
+    try {
+        const { period } = req.query; // monthly, quarterly, yearly
+        let filter = {};
+        const now = new Date();
+
+        if (period === 'monthly') {
+            filter.date = { $gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+        } else if (period === 'quarterly') {
+            const currentQuarter = Math.floor(now.getMonth() / 3);
+            filter.date = { $gte: new Date(now.getFullYear(), currentQuarter * 3, 1) };
+        } else if (period === 'yearly') {
+            filter.date = { $gte: new Date(now.getFullYear(), 0, 1) };
+        }
+
+        const sales = await Sales.find(filter).sort({ date: -1 });
+
+        // Convert to CSV
+        let csv = "Date,Product Name,Category,Quantity,Price\n";
+        sales.forEach(s => {
+            csv += `${s.date.toISOString().split('T')[0]},${s.productName},${s.category},${s.quantity},${s.price}\n`;
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=analysis_${period}.csv`);
+        res.status(200).send(csv);
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
