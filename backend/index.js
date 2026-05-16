@@ -9,6 +9,9 @@ import materialRouter from './src/Routers/materialRouters.js'
 import productRoutes from './src/Routers/productRouters.js'
 import salesRouter from './src/Routers/salesRouters.js'
 import aiRouter from './src/Routers/aiRouters.js'
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 dotenv.config()
 connectDB()
@@ -21,10 +24,15 @@ app.use(cors({
 }))
 app.use(express.json())
 
+// Request Logger
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+});
 
-app.get('/', (req, res) => {
-    res.status(200).send('hello world')
-})
+
+
+
 
 app.use('/api/auth', authRoutes)
 app.use('/api/material', materialRouter)

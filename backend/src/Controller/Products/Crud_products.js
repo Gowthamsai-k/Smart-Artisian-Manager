@@ -23,7 +23,11 @@ export const AddProduct = async (req, res) => {
                     });
                 }
 
+                // Calculate cost of material used (proportional to total cost)
+                const costOfUsedMaterial = (material.cost / material.quantity) * totalNeeded;
+
                 material.quantity -= totalNeeded;
+                material.cost -= costOfUsedMaterial;
                 await material.save();
             }
         }
