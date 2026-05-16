@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import {
     Container,
@@ -15,17 +15,26 @@ import {
     Select,
     SimpleGrid,
     ActionIcon,
-    Box
+    Box,
+    FileButton,
+    Image,
+    Loader,
+    Badge,
+    Tooltip,
+    Alert
 } from '@mantine/core';
-import { 
-    IconPalette, 
-    IconTag, 
-    IconCash, 
-    IconPlus, 
-    IconInfoCircle, 
+import {
+    IconPalette,
+    IconTag,
+    IconCash,
+    IconPlus,
+    IconInfoCircle,
     IconFileDescription,
     IconTrash,
-    IconHammer
+    IconHammer,
+    IconSparkles,
+    IconCamera,
+    IconRefresh
 } from '@tabler/icons-react';
 
 const Product = () => {
@@ -36,13 +45,18 @@ const Product = () => {
     const initialFormState = {
         name: "",
         description: "",
-        price: "",
+        price: null,
         category: "",
-        quantity: "",
+        quantity: null,
         materialsUsed: []
     };
 
     const [formData, setFormData] = useState(initialFormState);
+    const [error, setError] = useState('');
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiReasoning, setAiReasoning] = useState("");
+    const [selectedImage, setSelectedImage] = useState(null);
+    const resetRef = useRef(null);
 
     const fetchProducts = async () => {
         try {
@@ -90,9 +104,9 @@ const Product = () => {
     const handleMaterialChange = (index, materialId) => {
         const selected = materials.find(m => m._id === materialId);
         const updated = [...formData.materialsUsed];
-        updated[index] = { 
-            ...updated[index], 
-            materialId, 
+        updated[index] = {
+            ...updated[index],
+            materialId,
             name: selected?.name || '',
             unit: selected?.unit || ''
         };
@@ -101,7 +115,7 @@ const Product = () => {
 
     const handleMaterialQtyChange = (index, qty) => {
         const updated = [...formData.materialsUsed];
-        updated[index].quantity = qty;
+        updated[index].quantity = qty ?? 0;
         setFormData({ ...formData, materialsUsed: updated });
     };
 
@@ -137,29 +151,127 @@ const Product = () => {
         }
     };
 
+    const handleImageUpload = (file) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const imageData = reader.result;
+            setSelectedImage(imageData);
+            // Automatically trigger analysis with the new image
+            handleAIPredict(imageData);
+            // Reset the file input so the same image can be uploaded again if needed
+            resetRef.current?.();
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleAIPredict = async (passedImage = null) => {
+        const imageToUse = passedImage || selectedImage;
+        if (!formData.description && !imageToUse) {
+            setError("Please provide a description or an image for AI analysis.");
+            return;
+        }
+
+        setAiLoading(true);
+        setError("");
+        setAiReasoning("");
+
+        try {
+            const res = await axios.post('http://localhost:3000/api/ai/predict-price', {
+                description: formData.description,
+                materialsUsed: formData.materialsUsed,
+                category: formData.category,
+                image: imageToUse,
+                inventory: materials.map(m => ({ name: m.name, cost: m.cost, qty: m.quantity, unit: m.unit }))
+            }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+
+            if (res.data.success) {
+                setFormData(prev => ({
+                    ...prev,
+                    name: res.data.name || prev.name,
+                    category: res.data.category || prev.category,
+                    description: res.data.description || prev.description,
+                    price: res.data.suggestedPrice
+                }));
+                setAiReasoning(res.data.reasoning);
+            }
+        } catch (error) {
+            console.error('AI Prediction Error:', error);
+            setError(error.response?.data?.message || "AI analysis failed. Please try a smaller image or enter details manually.");
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!formData.name.trim() || !formData.description.trim() || !formData.category || formData.price === '' || formData.price === null || formData.quantity === '' || formData.quantity === null || Number(formData.quantity) <= 0) {
+            setError('Please fill in all required product fields before saving.');
+            return;
+        }
+
+        const invalidMaterial = formData.materialsUsed.some((item) => !item.materialId || item.quantity === '' || item.quantity <= 0);
+        if (invalidMaterial) {
+            setError('Please choose a material and enter a quantity for each material row.');
+            return;
+        }
+
+        const insufficientMaterials = formData.materialsUsed.filter((item) => {
+            const material = materials.find((m) => m._id === item.materialId);
+            return material && Number(item.quantity) * Number(formData.quantity) > Number(material.quantity);
+        });
+
+        if (insufficientMaterials.length > 0) {
+            const names = insufficientMaterials
+                .map((item) => {
+                    const material = materials.find((m) => m._id === item.materialId);
+                    return material?.name || 'selected material';
+                })
+                .join(', ');
+            setError(`Insufficient materials available for: ${names}. Please reduce the product quantity or increase stock.`);
+            return;
+        }
+
         try {
+            const payload = {
+                ...formData,
+                price: Number(formData.price),
+                quantity: Number(formData.quantity),
+                materialsUsed: formData.materialsUsed.map((item) => ({
+                    materialId: item.materialId,
+                    name: item.name,
+                    quantity: Number(item.quantity)
+                }))
+            };
+
             if (editingId) {
                 await axios.put(
                     `http://localhost:3000/api/products/${editingId}`,
-                    formData,
+                    payload,
                     { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
                 );
                 setEditingId(null);
             } else {
                 await axios.post(
                     'http://localhost:3000/api/products/addproduct',
-                    formData,
+                    payload,
                     { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
                 );
             }
 
+            setError('');
             setFormData(initialFormState);
             fetchProducts();
         } catch (error) {
             console.error('Error saving product:', error);
+            if (error.response?.status === 400) {
+                setError(error.response?.data?.message || 'Insufficient materials available to add this product.');
+            } else {
+                setError('Unable to save the product. Please try again.');
+            }
         }
     };
 
@@ -180,6 +292,12 @@ const Product = () => {
 
                     <Divider label="Product Details" labelPosition="center" />
 
+                    {error && (
+                        <Text color="red" ta="center" size="sm" mt="md">
+                            {error}
+                        </Text>
+                    )}
+
                     <form onSubmit={handleSubmit}>
                         <Stack gap="md">
                             <TextInput
@@ -199,23 +317,58 @@ const Product = () => {
                                 name="description"
                                 value={formData.description}
                                 onChange={handleChange}
+                                onBlur={() => {
+                                    if (formData.description.length > 20 && !formData.price) {
+                                        // Optional: Auto trigger or show a tip
+                                    }
+                                }}
                                 required
                                 minRows={3}
                                 size="md"
                                 leftSection={<IconFileDescription size={18} />}
+                                description="Tip: Mention specific craft techniques to increase predicted value!"
                             />
 
                             <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                                <NumberInput
-                                    label="Price"
-                                    placeholder="Amount in ₹"
-                                    value={formData.price}
-                                    onChange={(val) => setFormData({ ...formData, price: val })}
-                                    required
-                                    min={0}
-                                    size="md"
-                                    leftSection={<IconCash size={18} />}
-                                />
+                                <Box>
+                                    <NumberInput
+                                        label="Selling Price"
+                                        placeholder="Amount in ₹"
+                                        value={formData.price}
+                                        onChange={(val) => setFormData({ ...formData, price: val })}
+                                        required
+                                        min={0}
+                                        size="md"
+                                        leftSection={<IconCash size={18} />}
+                                    />
+                                    <Stack gap={4} mt={4}>
+                                        <Button
+                                            variant="light"
+                                            color="grape"
+                                            size="compact-sm"
+                                            leftSection={<IconSparkles size={14} />}
+                                            onClick={() => handleAIPredict()}
+                                            loading={aiLoading}
+                                            fullWidth
+                                        >
+                                            AI: Calculate 40%+ Profit
+                                        </Button>
+                                        <FileButton resetRef={resetRef} onChange={handleImageUpload} accept="image/png,image/jpeg">
+                                            {(props) => (
+                                                <Button
+                                                    {...props}
+                                                    variant="subtle"
+                                                    color="blue"
+                                                    size="compact-xs"
+                                                    leftSection={<IconCamera size={12} />}
+                                                    fullWidth
+                                                >
+                                                    Analysis by Photo
+                                                </Button>
+                                            )}
+                                        </FileButton>
+                                    </Stack>
+                                </Box>
                                 <Select
                                     label="Category"
                                     placeholder="Select category"
@@ -237,8 +390,31 @@ const Product = () => {
                                 />
                             </SimpleGrid>
 
+                            {selectedImage && (
+                                <Box mt="sm" pos="relative" w={150}>
+                                    <Image src={selectedImage} radius="md" h={100} w={150} />
+                                    <ActionIcon
+                                        pos="absolute"
+                                        top={5}
+                                        right={5}
+                                        color="red"
+                                        size="sm"
+                                        onClick={() => setSelectedImage(null)}
+                                    >
+                                        <IconTrash size={12} />
+                                    </ActionIcon>
+                                    <Badge size="xs" color="blue" mt={4}>Image for analysis</Badge>
+                                </Box>
+                            )}
+
+                            {aiReasoning && (
+                                <Alert color="grape" variant="light" icon={<IconSparkles size={16} />} title="AI Reasoning">
+                                    <Text size="xs">{aiReasoning}</Text>
+                                </Alert>
+                            )}
+
                             <Divider label="Materials Used (Per Unit)" labelPosition="center" mt="md" />
-                            
+
                             {formData.materialsUsed.map((row, index) => (
                                 <Group key={index} grow align="flex-end">
                                     <Select
@@ -258,10 +434,10 @@ const Product = () => {
                                         decimalScale={2}
                                         required
                                     />
-                                    <ActionIcon 
-                                        color="red" 
-                                        variant="light" 
-                                        size="lg" 
+                                    <ActionIcon
+                                        color="red"
+                                        variant="light"
+                                        size="lg"
                                         onClick={() => removeMaterialRow(index)}
                                         style={{ marginBottom: '5px' }}
                                     >
@@ -270,10 +446,11 @@ const Product = () => {
                                 </Group>
                             ))}
 
-                            <Button 
-                                variant="outline" 
-                                size="xs" 
-                                leftSection={<IconHammer size={14} />} 
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="xs"
+                                leftSection={<IconHammer size={14} />}
                                 onClick={addMaterialRow}
                                 fullWidth
                                 mt="xs"
@@ -284,7 +461,7 @@ const Product = () => {
 
                             <Group grow mt="xl">
                                 {editingId && (
-                                    <Button variant="light" color="gray" onClick={() => { setEditingId(null); setFormData(initialFormState); }}>
+                                    <Button type="button" variant="light" color="gray" onClick={() => { setEditingId(null); setFormData(initialFormState); setError(''); }}>
                                         Cancel
                                     </Button>
                                 )}
@@ -325,9 +502,9 @@ const Product = () => {
                                     </ActionIcon>
                                 </Group>
                             </Group>
-                            
+
                             <Text size="sm" lineClamp={2} color="dimmed" style={{ minHeight: '40px' }}>{product.description}</Text>
-                            
+
                             <Group justify="space-between" mt="sm">
                                 <Text fw={700} color="#556B2F" size="lg">₹{product.price}</Text>
                                 <Text size="xs" fw={700} bg="gray.0" px="xs" py={2} style={{ borderRadius: '4px' }}>

@@ -44,10 +44,13 @@ const Chatbot = () => {
         setLoading(true);
 
         try {
+            const token = localStorage.getItem('token');
+            const headers = { Authorization: `Bearer ${token}` };
+
             // Fetch latest context data
             const [prodRes, matRes] = await Promise.all([
-                axios.get('http://localhost:3000/api/sales/products'),
-                axios.get('http://localhost:3000/api/material/all')
+                axios.get('http://localhost:3000/api/sales/products', { headers }),
+                axios.get('http://localhost:3000/api/material/all', { headers })
             ]);
 
             const response = await axios.post('http://localhost:3000/api/ai/chat', {
@@ -57,7 +60,7 @@ const Chatbot = () => {
                     products: prodRes.data.products || [],
                     inventory: matRes.data.materials || []
                 }
-            });
+            }, { headers });
 
             if (response.data.success) {
                 setMessages([...newMessages, { role: 'assistant', text: response.data.reply }]);

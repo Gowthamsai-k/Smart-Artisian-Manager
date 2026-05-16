@@ -20,6 +20,7 @@ const Sales = () => {
     const [products, setProducts] = useState([]);
     const [salesList, setSalesList] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     const initialFormState = {
         productId: '',
@@ -34,7 +35,9 @@ const Sales = () => {
     // Fetch existing products for the dropdown
     const fetchProducts = async () => {
         try {
-            const res = await axios.get('http://localhost:3000/api/sales/products', { withCredentials: true });
+            const res = await axios.get('http://localhost:3000/api/sales/products', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
             if (res.data.success) {
                 setProducts(res.data.products.filter(p => p.quantity > 0));
             }
@@ -69,18 +72,18 @@ const Sales = () => {
             const response = await axios.post(
                 'http://localhost:3000/api/sales/',
                 formData,
-                { withCredentials: true }
+                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
             );
 
             if (response.data.success) {
                 setSalesList([response.data.sale, ...salesList]);
                 setFormData(initialFormState);
                 fetchProducts();
-                alert(`Sold ${response.data.sale.quantity} items of ${response.data.sale.productName}`);
+                setError(""); // Clear error on success
             }
         } catch (error) {
             console.error('Error recording sale:', error);
-            alert(error.response?.data?.message || 'Error recording sale');
+            setError(error.response?.data?.message || 'Error recording sale');
         } finally {
             setLoading(false);
         }
@@ -100,6 +103,12 @@ const Sales = () => {
                     </Text>
 
                     <Divider label="Sale Details" labelPosition="center" />
+
+                    {error && (
+                        <Text color="red" size="sm" ta="center" mt="md" fw={500}>
+                            ⚠️ {error}
+                        </Text>
+                    )}
 
                     <form onSubmit={handleSubmit}>
                         <Stack gap="md">

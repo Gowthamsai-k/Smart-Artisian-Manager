@@ -12,17 +12,17 @@ export const AddProduct = async (req, res) => {
                 if (!material) {
                     return res.status(404).json({ success: false, message: `Material ${item.name} not found` });
                 }
-                
+
                 // Total quantity needed = quantity per unit * number of products being made
                 const totalNeeded = item.quantity * quantity;
-                
+
                 if (material.quantity < totalNeeded) {
-                    return res.status(400).json({ 
-                        success: false, 
-                        message: `Insufficient quantity for ${material.name}. Available: ${material.quantity}, Needed: ${totalNeeded}` 
+                    return res.status(400).json({
+                        success: false,
+                        message: `Insufficient quantity for ${material.name}. Available: ${material.quantity}, Needed: ${totalNeeded}`
                     });
                 }
-                
+
                 material.quantity -= totalNeeded;
                 await material.save();
             }
@@ -34,7 +34,8 @@ export const AddProduct = async (req, res) => {
             price,
             quantity,
             category,
-            materialsUsed
+            materialsUsed,
+            artisan: req.user.id
         });
 
         await product.save();
@@ -54,7 +55,7 @@ export const AddProduct = async (req, res) => {
 
 export const GetProducts = async (req, res) => {
     try {
-        const products = await Products.find();
+        const products = await Products.find({ artisan: req.user.id });
         res.status(200).json({
             success: true,
             products
@@ -70,8 +71,12 @@ export const GetProducts = async (req, res) => {
 export const UpdateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const product = await Products.findByIdAndUpdate(id, req.body, { new: true });
-        if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+        const product = await Products.findOneAndUpdate(
+            { _id: id, artisan: req.user.id },
+            req.body,
+            { new: true }
+        );
+        if (!product) return res.status(404).json({ success: false, message: "Product not found or unauthorized" });
         res.status(200).json({ success: true, product });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -81,8 +86,8 @@ export const UpdateProduct = async (req, res) => {
 export const DeleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const product = await Products.findByIdAndDelete(id);
-        if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+        const product = await Products.findOneAndDelete({ _id: id, artisan: req.user.id });
+        if (!product) return res.status(404).json({ success: false, message: "Product not found or unauthorized" });
         res.status(200).json({ success: true, message: "Product deleted successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

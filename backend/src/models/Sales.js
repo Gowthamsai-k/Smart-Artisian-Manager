@@ -7,7 +7,7 @@ const SalesSchema = new mongoose.Schema({
     quantity: { type: Number, default: 1 },
     category: { type: String },
     date: { type: Date, default: Date.now },
-    artisan: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    artisan: { type: mongoose.Schema.Types.ObjectId, ref: 'Client' }
 }, { timestamps: true });
 
 export default mongoose.model('Sales', SalesSchema);

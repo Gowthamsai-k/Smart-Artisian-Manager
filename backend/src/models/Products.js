@@ -11,7 +11,8 @@ const ProductSchema = new mongoose.Schema({
         materialId: { type: mongoose.Schema.Types.ObjectId, ref: 'Material' },
         name: String,
         quantity: Number
-    }]
+    }],
+    artisan: { type: mongoose.Schema.Types.ObjectId, ref: 'Client' }
 
 }, { timestamps: true })
 

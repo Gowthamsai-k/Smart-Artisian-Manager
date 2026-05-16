@@ -44,42 +44,71 @@ const Dashboard = () => {
   const [stats, setStats] = useState({
     totalSales: 0,
     totalProfit: 0,
+    dailyEarnings: 0,
     activeProducts: 0,
     materialsCount: 0
   });
 
   const fetchData = async () => {
-    try {
-      const [salesRes, productsRes, materialsRes, saleStatsRes, materialStatsRes] = await Promise.all([
-        axios.get('http://localhost:3000/api/sales/all', { withCredentials: true }),
-        axios.get('http://localhost:3000/api/sales/products', { withCredentials: true }),
-        axios.get('http://localhost:3000/api/material/all', { withCredentials: true }),
-        axios.get('http://localhost:3000/api/sales/stats', { withCredentials: true }),
-        axios.get('http://localhost:3000/api/material/stats', { withCredentials: true })
-      ]);
+    const token = localStorage.getItem('token');
+    const headers = { Authorization: `Bearer ${token}` };
 
-      if (salesRes.data.success) {
-        const total = salesRes.data.sales.reduce((acc, sale) => acc + sale.price, 0);
-        setStats(prev => ({ ...prev, totalSales: total, totalProfit: total * 0.4 }));
+    // Helper for independent fetching
+    const safeFetch = async (url) => {
+      try {
+        return await axios.get(url, { headers, withCredentials: true });
+      } catch (err) {
+        console.error(`Fetch failed for ${url}:`, err);
+        return { data: { success: false } };
       }
+    };
 
-      if (productsRes.data.success) {
-        setStats(prev => ({ ...prev, activeProducts: productsRes.data.products.length }));
-      }
+    const [salesRes, productsRes, materialsRes, saleStatsRes, materialStatsRes] = await Promise.all([
+      safeFetch('http://localhost:3000/api/sales/all'),
+      safeFetch('http://localhost:3000/api/sales/products'),
+      safeFetch('http://localhost:3000/api/material/all'),
+      safeFetch('http://localhost:3000/api/sales/stats'),
+      safeFetch('http://localhost:3000/api/material/stats')
+    ]);
 
-      if (materialsRes.data.success) {
-        setStats(prev => ({ ...prev, materialsCount: materialsRes.data.materials.length }));
-      }
+    if (salesRes.data.success) {
+      const salesData = salesRes.data.sales || [];
+      const total = salesData.reduce((acc, sale) => acc + (sale.price || 0), 0);
+      
+      // Calculate daily earnings
+      const today = new Date().setHours(0,0,0,0);
+      const daily = salesData
+        .filter(sale => new Date(sale.date).setHours(0,0,0,0) === today)
+        .reduce((acc, sale) => acc + (sale.price || 0), 0);
 
-      if (saleStatsRes.data.success && saleStatsRes.data.stats.length > 0) {
-        setSalesProfit(saleStatsRes.data.stats);
-      }
+      setStats(prev => ({ 
+        ...prev, 
+        totalSales: total, 
+        totalProfit: total * 0.4,
+        dailyEarnings: daily
+      }));
+    }
 
-      if (materialStatsRes.data.success && materialStatsRes.data.stats.length > 0) {
-        setMaterialsIntake(materialStatsRes.data.stats);
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+    if (productsRes.data.success) {
+      const productData = productsRes.data.products || [];
+      setStats(prev => ({ ...prev, activeProducts: productData.length }));
+    }
+
+    if (materialsRes.data.success) {
+      const materialData = materialsRes.data.materials || [];
+      setStats(prev => ({ ...prev, materialsCount: materialData.length }));
+    }
+
+    if (saleStatsRes.data.success && saleStatsRes.data.stats) {
+      setSalesProfit(saleStatsRes.data.stats);
+    } else {
+      setSalesProfit([]);
+    }
+
+    if (materialStatsRes.data.success && materialStatsRes.data.stats) {
+      setMaterialsIntake(materialStatsRes.data.stats);
+    } else {
+      setMaterialsIntake([]);
     }
   };
 
@@ -89,8 +118,10 @@ const Dashboard = () => {
 
   const handleExport = async (period) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await axios.get(`http://localhost:3000/api/sales/export?period=${period}`, {
         responseType: 'blob',
+        headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -138,10 +169,19 @@ const Dashboard = () => {
               <span>Active</span>
             </div>
           </div>
-          <span className="stat-label">Total Sales</span>
+          <span className="stat-label">Total Revenue</span>
           <span className="stat-value">₹{stats.totalSales.toLocaleString()}</span>
         </div>
 
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className="stat-icon-wrapper" style={{ background: '#fffbeb', color: '#d97706' }}>
+              <TrendingUp size={20} />
+            </div>
+          </div>
+          <span className="stat-label">Daily Earning</span>
+          <span className="stat-value">₹{stats.dailyEarnings.toLocaleString()}</span>
+        </div>
 
         <div className="stat-card">
           <div className="stat-header">

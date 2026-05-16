@@ -1,5 +1,6 @@
 import Sales from "../../models/Sales.js";
 import Products from "../../models/Products.js";
+import mongoose from "mongoose";
 
 export const AddSale = async (req, res) => {
     try {
@@ -28,7 +29,8 @@ export const AddSale = async (req, res) => {
             productName,
             price: price * qtyToSell, // Store total price for the sale
             category,
-            quantity: qtyToSell
+            quantity: qtyToSell,
+            artisan: req.user.id
         });
         await sale.save();
 
@@ -52,7 +54,7 @@ export const AddSale = async (req, res) => {
 
 export const GetSales = async (req, res) => {
     try {
-        const sales = await Sales.find().sort({ createdAt: -1 });
+        const sales = await Sales.find({ artisan: req.user.id }).sort({ createdAt: -1 });
         res.status(200).json({
             success: true,
             sales
@@ -68,6 +70,9 @@ export const GetSales = async (req, res) => {
 export const GetSalesStats = async (req, res) => {
     try {
         const stats = await Sales.aggregate([
+            {
+                $match: { artisan: new mongoose.Types.ObjectId(String(req.user.id)) }
+            },
             {
                 $group: {
                     _id: { $month: "$date" },
@@ -97,7 +102,7 @@ export const GetSalesStats = async (req, res) => {
 export const ExportSales = async (req, res) => {
     try {
         const { period } = req.query; // monthly, quarterly, yearly
-        let filter = {};
+        let filter = { artisan: req.user.id };
         const now = new Date();
 
         if (period === 'monthly') {

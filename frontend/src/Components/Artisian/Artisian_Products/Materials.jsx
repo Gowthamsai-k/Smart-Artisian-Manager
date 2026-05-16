@@ -13,7 +13,8 @@ import {
     Divider,
     ActionIcon, 
     SimpleGrid, 
-    Box
+    Box,
+    Select
 } from '@mantine/core';
 import { IconPackage, IconScale, IconCash, IconPlus, IconTrash, IconPencil } from '@tabler/icons-react';
 
@@ -29,6 +30,19 @@ const Materials = () => {
     };
 
     const [formData, setFormData] = useState(initialFormState);
+    const [selectedPredefined, setSelectedPredefined] = useState(null);
+    const [error, setError] = useState("");
+
+    const predefinedMaterials = [
+        { name: "Glass", unit: "sq ft", unitPrice: 500 },
+        { name: "Wood", unit: "cu ft", unitPrice: 800 },
+        { name: "Timber", unit: "cu ft", unitPrice: 600 },
+        { name: "Screws", unit: "piece", unitPrice: 2 },
+        { name: "Ceramic Clay", unit: "kg", unitPrice: 150 },
+        { name: "Glaze", unit: "liter", unitPrice: 300 },
+        { name: "Metal Sheet", unit: "sq ft", unitPrice: 450 },
+        { name: "Fabric", unit: "meter", unitPrice: 200 }
+    ];
 
     const fetchMaterials = async () => {
         try {
@@ -47,11 +61,35 @@ const Materials = () => {
         fetchMaterials();
     }, []);
 
+    const handlePredefinedChange = (val) => {
+        const item = predefinedMaterials.find(m => m.name === val);
+        if (item) {
+            setSelectedPredefined(item);
+            setFormData({
+                ...formData,
+                name: item.name,
+                unit: item.unit,
+                cost: (formData.quantity || 0) * item.unitPrice
+            });
+        } else {
+            setSelectedPredefined(null);
+        }
+    };
+
+    const handleQtyChange = (val) => {
+        const qty = val || 0;
+        const newCost = selectedPredefined ? qty * selectedPredefined.unitPrice : formData.cost;
+        setFormData({ ...formData, quantity: qty, cost: newCost });
+    };
+
     const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value,
         });
+        if (e.target.name === 'name' || e.target.name === 'unit') {
+            setSelectedPredefined(null); // Reset predefined lock if manually edited
+        }
     };
 
     const handleEdit = (mat) => {
@@ -62,6 +100,7 @@ const Materials = () => {
             cost: mat.cost,
             unit: mat.unit
         });
+        setSelectedPredefined(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -97,9 +136,12 @@ const Materials = () => {
             }
             
             setFormData(initialFormState);
+            setSelectedPredefined(null);
+            setError("");
             fetchMaterials();
         } catch (error) {
             console.error('Error saving material:', error);
+            setError(error.response?.data?.message || "Failed to save material. Please check your connection and try again.");
         }
     };
 
@@ -120,8 +162,25 @@ const Materials = () => {
 
                     <Divider my="sm" />
 
+                    {error && (
+                        <Text color="red" size="sm" ta="center" mb="md" fw={500}>
+                            ⚠️ {error}
+                        </Text>
+                    )}
+
                     <form onSubmit={handleSubmit}>
                         <Stack gap="md">
+                            {!editingId && (
+                                <Select
+                                    label="Quick Add Common Material"
+                                    placeholder="Select to auto-fill prices"
+                                    data={predefinedMaterials.map(m => m.name)}
+                                    onChange={handlePredefinedChange}
+                                    leftSection={<IconPlus size={18} />}
+                                    clearable
+                                />
+                            )}
+
                             <TextInput
                                 label="Material Name"
                                 placeholder="e.g., Canvas, Oil Paint"
@@ -138,7 +197,7 @@ const Materials = () => {
                                     label="Quantity"
                                     placeholder="Amount"
                                     value={formData.quantity}
-                                    onChange={(val) => setFormData({ ...formData, quantity: val })}
+                                    onChange={handleQtyChange}
                                     required
                                     min={0}
                                     size="md"
@@ -156,14 +215,16 @@ const Materials = () => {
                             </Group>
 
                             <NumberInput
-                                label="Total Cost"
+                                label={selectedPredefined ? `Total Cost (₹${selectedPredefined.unitPrice}/unit)` : "Total Cost"}
                                 placeholder="Total Cost (₹)"
                                 value={formData.cost}
                                 onChange={(val) => setFormData({ ...formData, cost: val })}
                                 required
                                 min={0}
                                 size="md"
+                                readOnly={!!selectedPredefined}
                                 leftSection={<IconCash size={18} />}
+                                description={selectedPredefined ? "Calculated automatically based on unit price" : null}
                             />
 
                             <Group grow mt="md">

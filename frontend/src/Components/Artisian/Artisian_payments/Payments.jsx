@@ -19,7 +19,9 @@ const Payments = () => {
 
     const fetchSales = async () => {
         try {
-            const res = await axios.get('http://localhost:3000/api/sales/all', { withCredentials: true });
+            const res = await axios.get('http://localhost:3000/api/sales/all', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
             if (res.data.success) {
                 setSales(res.data.sales);
                 const total = res.data.sales.reduce((acc, sale) => acc + sale.price, 0);

@@ -1,8 +1,10 @@
 import express from 'express';
-import { ChatWithAI } from '../Controller/AI/aiController.js';
+import { ChatWithAI, PredictPrice } from '../Controller/AI/aiController.js';
+import protect from '../middleware/authMiddle.js';
 
 const aiRouter = express.Router();
 
-aiRouter.post('/chat', ChatWithAI);
+aiRouter.post('/chat', protect, ChatWithAI);
+aiRouter.post('/predict-price', protect, PredictPrice);
 
 export default aiRouter;
