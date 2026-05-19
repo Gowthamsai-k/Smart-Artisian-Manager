@@ -80,33 +80,36 @@ export const PredictPrice = async (req, res) => {
             unit: m.unit
         }));
 
-        // Use the native Llama 4 Scout model which is multimodal
-        const modelToUse = "meta-llama/llama-4-scout-17b-16e-instruct";
+        // Select model: Use 90B Vision for best image understanding, else Scout for chat
+        const modelToUse = image ? "llama-3.2-90b-vision-preview" : "meta-llama/llama-4-scout-17b-16e-instruct";
         console.log(`Using AI model: ${modelToUse} (Image present: ${!!image})`);
 
         const promptText = `Return ONLY a JSON object. No markdown. No extra text.
-        You are an expert artisan marketplace consultant. Generate a reasonable and competitive pricing strategy.
+        You are an expert artisan marketplace consultant. 
+        
+        TASK:
+        1. Closely analyze the attached image (if provided) to identify the product's material, craftsmanship, and style.
+        2. Use the description as additional context.
+        3. Determine the correct category from this list: [Ceramics, Woodwork, Textiles, Jewelry, Glassware, Leather, Other].
+        4. Generate a professional name and sales description.
+        5. Calculate a REASONABLE price based on materials used.
         
         Fields to predict:
         - name: A professional name for the product.
-        - category: One of [Ceramics, Woodwork, Textiles, Jewelry, Glassware, Leather, Other].
-        - description: A detailed sales description.
+        - category: One of [Ceramics, Woodwork, Textiles, Jewelry, Glassware, Leather, Other]. BE ACCURATE.
+        - description: A detailed sales description highlighting the visual craft features.
         - suggestedPrice: A competitive price in INR (Base Cost + 30-40% margin).
-        - reasoning: Detailed step-by-step cost breakdown.
+        - reasoning: Detailed step-by-step cost breakdown based on the visual features and materials.
 
         Context:
-        - Category: ${category || "Unknown"}
-        - Description: ${description || "N/A"}
+        - Provided Category: ${category || "Unknown"}
+        - Provided Description: ${description || "N/A"}
         - Materials Needed for ONE unit: ${JSON.stringify(materialsUsed)}
-        - Inventory Costs (Price per 1 unit of material): ${JSON.stringify(simplifiedInventory)}
+        - Inventory Costs (Price per 1 unit): ${JSON.stringify(simplifiedInventory)}
         
         Calculation Rule:
-        1. For each material used, multiply (Quantity Needed) by its (UnitPrice from Inventory).
-        2. Total Material Cost = Sum of these results.
-        3. Add a small labor/overhead fee (e.g., 20% of material cost).
-        4. Final Suggested Price = (Total Cost + Labor) * 1.3.
-        
-        Aim for a price that is REASONABLE for a handcrafted item but covers all costs.
+        1. Material Cost = (Quantity Needed * UnitPrice).
+        2. Suggested Price = (Material Cost + 20% Overhead) * 1.35.
         
         JSON Format: {"name": "string", "category": "string", "description": "string", "suggestedPrice": number, "reasoning": "string"}`;
 

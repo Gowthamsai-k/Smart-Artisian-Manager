@@ -40,6 +40,23 @@ app.use('/api/products', productRoutes)
 app.use('/api/sales', salesRouter)
 app.use('/api/ai', aiRouter)
 
-app.listen(3000, () => {
-    console.log("server is running on port 3000")
+// Serve frontend static assets in production
+const frontendDist = path.join(__dirname, '../frontend/dist');
+app.use(express.static(frontendDist));
+
+// Wildcard route to serve React's index.html for client-side routing
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        return next();
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
+        if (err) {
+            next();
+        }
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`server is running on port ${PORT}`)
 })

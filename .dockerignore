@@ -1,0 +1,11 @@
+.git
+.gitignore
+README.md
+**/node_modules
+**/dist
+**/.env
+**/.env.local
+backend/scratch
+node_modules
+dist
+.gemini
